@@ -1,32 +1,40 @@
 import requests
-import json
 
-def get_dankrose_market():
-    # Make GET request to /api/orders/{asset} endpoint
-    response = requests.get("https://xchain.io/api/orders/DANKROSECASH")
-    data = json.loads(response.text)
+asset = 'DANKROSECASH'
+url = f'https://xchain.io/api/asset/{asset}'
+response = requests.get(url)
+if response.status_code == 200:
+    asset_info = response.json()
+    print(f'Asset Name: {asset_info["asset"]}')
+    print(f'Estimated Value in USD: {asset_info["estimated_value"]["usd"]}')
+    print(f'Estimated Value in XCP: {asset_info["estimated_value"]["xcp"]}')
+    print(f'Issuer: {asset_info["issuer"]}')
+    print(f'Supply: {asset_info["supply"]}')
+else:
+    print(f'Error: {response.status_code} - {response.reason}')
 
-    # Filter results to only include orders that reference DANKROSECASH as give_asset or get_asset and have a status of "open"
-    dankrose_orders = [order for order in data['data'] if (order['give_asset'] == "DANKROSECASH" or order['get_asset'] == "DANKROSECASH") and order["status"] == "open"]
-
-    buy_prices = []
-    for order in dankrose_orders:
-        if order['give_asset'] == "DANKROSECASH":
-            price = float(order['get_remaining']) / float(order['give_quantity'])
-            remaining = order['give_remaining']
-            buy_prices.append({"token": order['get_asset'], "price": price, "remaining": remaining})
-    buy_prices = sorted(buy_prices, key=lambda x: x["price"])
-    for price in buy_prices:
-        print(f"Buy {price['remaining']} {price['token']} for {price['price']} DANKROSECASH. Remaining DANKROSECASH: {price['remaining']}")
-    print("\n")
-    sell_prices = []
-    for order in dankrose_orders:
-        if order['get_asset'] == "DANKROSECASH":
-            price = float(order['get_quantity']) / float(order['give_remaining'])
-            remaining = order['give_remaining']
-            sell_prices.append({"token": order['give_asset'], "price": price, "remaining": remaining})
-    sell_prices = sorted(sell_prices, key=lambda x: x["price"])
-    for price in sell_prices:
-        print(f"Sell {price['remaining']} DANKROSECASH for 1 {price['token']}. Remaining {price['token']}: {price['remaining']}")
-
-get_dankrose_market()
+url = f'https://xchain.io/api/orders/{asset}'
+response = requests.get(url)
+if response.status_code == 200:
+    order_info = response.json()
+    open_orders = 0
+    filled_orders = 0
+    for order in sorted(order_info["data"], key=lambda x: 0 if x["get_asset"] == "DANKROSECASH" else 1):
+        if order["status"] == "open":
+            open_orders += 1
+            print(f'You pay with: {order["get_asset"]}')
+            print(f'Get Quantity: {order["get_quantity"]}')
+            print(f'Get Remaining: {order["get_remaining"]}')
+            print(f'You recieve: {order["give_asset"]}')
+            print(f'Give Quantity: {order["give_quantity"]}')
+            print(f'Give Remaining: {order["give_remaining"]}')
+            print(f'Block Index: {order["block_index"]}')
+            print(f'Expire Index: {order["expire_index"]}')
+            print(f'Status: {order["status"]}')
+            print("\n")
+        elif order["status"] == "filled":
+            filled_orders += 1
+    print("NUMBER OF OPEN MARKETS:", open_orders)
+    print("NUMBER OF CLOSED MARKETS:", filled_orders)
+else:
+    print(f'Error: {response.status_code} - {response.reason}')
