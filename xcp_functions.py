@@ -1,5 +1,9 @@
 import requests
 import json
+import convertapi
+import os
+
+convertapi.api_secret = os.environ.get('CONVERTAPI_API_SECRET')
 
 # See https://xchain.io/api 
 
@@ -124,14 +128,33 @@ for asset_name in all_wallet_assets:
                 description_info = response.json()
                 image_url = description_info['image_large']
                 #print(image_url)
-                data = {
+                asset_desc_img_url = {
                         "asset": asset,
                         "description_url": description_url,
                         "image_url": image_url
                     }
-                #output.append(data)
-                print(json.dumps(data))
+                #output.append(asset_desc_img_url)
+                print(json.dumps(asset_desc_img_url))
                 print('\n')
             else:
                 print(f'Error: {response.status_code} - {response.reason}')
 
+# create images directory if it does not exist
+if not os.path.exists('images'):
+    os.mkdir('images')
+
+# parse the json array
+for asset_desc_img_url in json.loads(asset_desc_img_url):
+    # separate the asset value and image_url value
+    asset = asset_desc_img_url['asset']
+    image_url = asset_desc_img_url['image_url']
+    
+    # split the image filename from the url
+    image_filename = image_url.rsplit('/', 1)[1]
+    
+    # create the full filename with the asset as a prefix
+    full_filename = asset + '-' + image_filename
+    
+    # download the file
+    with open('images/' + full_filename, 'wb') as f:
+        f.write(requests.get(image_url).content)
