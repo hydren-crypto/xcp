@@ -2,6 +2,7 @@ import requests
 import json
 import convertapi
 import os
+import argparse
 
 convertapi.api_secret = os.environ.get('CONVERTAPI_API_SECRET')
 print(f'Convert API Secret: {convertapi.api_secret}')
@@ -44,6 +45,7 @@ def get_asset_owner(asset):
         print(f'Error: {response.status_code} - {response.reason}')  
 
 def get_description_urls(check_address):
+    # This fetches the description JSON and parses out the image_url field
     all_wallet_assets = get_wallet_assets(check_address)
     output = []
     print(f'Check if Wallet Owner is Owner of Asset')
@@ -68,6 +70,9 @@ def get_description_urls(check_address):
                     # print('\n')
                 else:
                     print(f'Error: {response.status_code} - {response.reason}')
+    # Save the output to a JSON file
+    with open('asset_desc_img_url.json', 'w') as outfile:
+        json.dump(asset_desc_img_url, outfile)
     return output
 
 def save_images(asset_desc_img_urls):
@@ -95,10 +100,20 @@ def save_images(asset_desc_img_urls):
         convertapi.convert('webp', {'File': full_filename}, from_format=file_extension).save_files('images')
 
 def main():
-    check_address = '1AwS3wRFNCoymKs69BXjAA4VfgWvuKvx4j'
+    # Define parser and add arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-w', '--wallet', help='The wallet address to check')
+
+    # Parse arguments
+    args = parser.parse_args()
+
+    # Assign arguments to variables
+    check_address = args.wallet
+
+    # check_address = '1AwS3wRFNCoymKs69BXjAA4VfgWvuKvx4j'
     print(f'Checking address: {check_address} for assets')
     asset_desc_img_urls = get_description_urls(check_address)
-    print(f'Preparing for image download')
+    print(f'Preparing for image download and conversion')
     # print(json.dumps(asset_desc_img_urls, indent=4))
     save_images(asset_desc_img_urls)
 
